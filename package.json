@@ -1,0 +1,21 @@
+{
+  "name": "pos-error-reporter",
+  "version": "1.0.0",
+  "description": "Pipeline automatizado de reportería de errores POS - Manufacturas Eliot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "report": "node index.js --run-now",
+    "test": "jest --coverage"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "mssql": "^11.0.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^8.0.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

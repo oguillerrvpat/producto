@@ -150,7 +150,7 @@ flowchart TD
 - [x] Workspace Detection — **COMPLETED**
 - [x] Reverse Engineering — **SKIPPED** (Greenfield — sin código existente)
 - [x] Requirements Analysis — **COMPLETED**
-- [x] User Stories — **COMPLETED** (8 historias, 4 personas)
+- [x] User Stories — **COMPLETED** (7 historias, 2 personas, 5 feature groups) — RESTART
 - [x] Workflow Planning — **IN PROGRESS**
 - [ ] Application Design — **EXECUTE**
   - **Rationale**: Se necesitan nuevos componentes (ErrorReportService, módulos Node.js, SP SQL Server). Los métodos, responsabilidades y dependencias entre componentes deben definirse antes del código.
@@ -167,8 +167,8 @@ flowchart TD
   - **Rationale**: Compliance DIAN/NIIF requiere definir retención de datos, append-only para auditoría, cifrado TDE.
 - [ ] NFR Design — **EXECUTE**
   - **Rationale**: Los patrones NFR (índices de performance, política de particionado, retención 3 años) deben diseñarse antes de escribir el DDL.
-- [ ] Infrastructure Design — **EXECUTE**
-  - **Rationale**: Definir SQL Server Agent job schedule, permisos de BD, estrategia de backup para nuevas tablas.
+- [ ] Infrastructure Design — **SKIP**
+  - **Rationale**: SQL Server 2016+ ya existe en entorno local. Solo se agregan SP y tabla; sin SQL Agent job, sin cloud resources, sin deployment architecture requerida.
 - [ ] Code Generation — **EXECUTE** (ALWAYS)
 
 #### Unit 2: Node.js Pipeline Service
@@ -176,11 +176,11 @@ flowchart TD
 - [ ] Functional Design — **EXECUTE**
   - **Rationale**: La lógica de orquestación del pipeline (flujo de módulos, manejo de errores, retry con backoff) y el formato exacto del Excel/CSV requieren diseño detallado.
 - [ ] NFR Requirements — **EXECUTE**
-  - **Rationale**: Seguridad (SECURITY-01 a SECURITY-15), performance (< 5 min), disponibilidad (SLA 99%) y logging estructurado deben especificarse.
+  - **Rationale**: SECURITY-03 (logging sin PII), SECURITY-12 (credenciales Gmail en .env), SECURITY-15 (manejo explícito errores BD+SMTP). Performance <5 min. Solo reglas habilitadas en RESTART.
 - [ ] NFR Design — **EXECUTE**
-  - **Rationale**: Patrones de seguridad (almacenamiento de credenciales, TLS, logging sin PII), retry exponential backoff, y estructura de logging estructurado deben diseñarse.
-- [ ] Infrastructure Design — **EXECUTE**
-  - **Rationale**: Configuración PM2, variables de entorno, estructura de directorios, topología DEV/STAGING/PROD en Windows Server.
+  - **Rationale**: Patrones concretos para logging estructurado seguro, gestión de credenciales via dotenv, y retry SMTP con backoff de 5 min.
+- [ ] Infrastructure Design — **SKIP**
+  - **Rationale**: Ejecución local en máquina del desarrollador. PM2/node-cron es configuración de aplicación, no infraestructura. Sin staging/prod, sin Windows Server deployment, sin cloud resources.
 - [ ] Code Generation — **EXECUTE** (ALWAYS)
 
 #### Post-units
@@ -234,13 +234,14 @@ flowchart TD
 
 ## Success Criteria
 
-- **Primary Goal**: Pipeline automático entregando reporte Excel antes de las 06:00 diariamente
-- **Key Deliverables**: SP_GENERATE_ERROR_REPORT, AUDIT_EMAIL_DELIVERY, ErrorReportService, reporte Excel formateado, email Gmail→Outlook
+- **Primary Goal**: Pipeline automático a las 08:00 AM entregando reporte Excel a orodriguez@patprimo.com.co
+- **Key Deliverables**: SP_GENERATE_ERROR_REPORT, AUDIT_EMAIL_DELIVERY, ErrorReportService, reporte Excel (Detalle + Resumen), TXT pipes, email Gmail→Outlook
 - **Quality Gates**:
-  - Tests unitarios ≥ 70% cobertura
-  - E2E en STAGING: 5 días consecutivos exitosos
-  - UAT firmado por Director Ventas + Director Contabilidad
-  - 0 credenciales hardcodeadas en código fuente
+  - Tests unitarios ≥ 60% cobertura lógica de negocio (Jest)
+  - Pipeline completa en <5 minutos para ≤250 errores/día
+  - 0 credenciales hardcodeadas en código fuente (SECURITY-12)
+  - Logs sin PII ni credenciales (SECURITY-03)
+  - Errores BD + SMTP manejados explícitamente (SECURITY-15)
   - Todos los envíos registrados en AUDIT_EMAIL_DELIVERY
 
 ---
@@ -249,12 +250,7 @@ flowchart TD
 
 | Regla | Estado | Observación |
 |---|---|---|
-| SECURITY-01 (Cifrado tránsito/reposo) | Contemplado | TLS para SQL Server + Gmail SMTP TLS 587; TDE SQL Server TBD-discovery |
-| SECURITY-03 (Logging estructurado) | Contemplado | Definido en NFR; sin PII en logs |
-| SECURITY-05 (Input validation) | N/A en esta fase | No hay API endpoints con input externo en Fase 1 |
-| SECURITY-09 (Hardening) | Contemplado | Sin credenciales por defecto; errores sin stack trace |
-| SECURITY-10 (Supply chain) | Contemplado | package-lock.json; versiones fijadas |
-| SECURITY-12 (Auth/Credenciales) | Contemplado | Gmail via variables de entorno; no hardcoded |
-| SECURITY-14 (Alerting/Logging) | Contemplado | AUDIT_EMAIL_DELIVERY append-only; retención ≥ 3 años |
-| SECURITY-15 (Exception handling) | Contemplado | Retry + alerta TI + fail-closed |
-| SECURITY-02,04,06,07,08,11,13 | N/A en Fase 1 | No hay load balancer, web endpoints, IAM policies, ni network config en MVP |
+| SECURITY-03 (Logging estructurado sin PII) | Compliant | Plan incluye logging estructurado; sin PII. Se verificará en Construction. |
+| SECURITY-12 (Credenciales en .env) | Compliant | Requirements mandatan .env para Gmail App Password; sin hardcoding. |
+| SECURITY-15 (Exception handling) | Compliant | Plan incluye retry SMTP + manejo explícito BD/SMTP. Se verificará en Construction. |
+| SECURITY-01,02,04-11,13,14 | N/A | Deshabilitadas en RESTART (entorno local/MVP; sin cloud, API, web, ni IAM) |
